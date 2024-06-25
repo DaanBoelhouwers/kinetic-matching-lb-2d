@@ -77,7 +77,7 @@ class Matching:
         interval_start = 0
         intervals = []
         step = 0
-        while step <= steps:
+        while step < steps:
             t = step/steps
             # Compute a lowerbound on the cost of the matching
             min_cost = sum([edge.min_length(t, t+1/steps) for edge in edges])
@@ -102,5 +102,8 @@ class Matching:
                 intervals.append((interval_start, t))
                 below_ratio = False
             step += 1
+ 
+        if below_ratio:
+            intervals.append((interval_start, t))
 
         return intervals

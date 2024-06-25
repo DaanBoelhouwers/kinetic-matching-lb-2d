@@ -9,7 +9,7 @@ def compute_flip_path(n_points, agents, tasks, approx_ratio, verbose=False):
     # Compute the maximum cost of an optimal matching, which occurs at t=0.5
     max_opt_val = 0
     for i in range(n_points):
-        opt_val += Edge(agents[i], tasks[i]).length(0.5)
+        max_opt_val += Edge(agents[i], tasks[i]).length(0.5)
     B = approx_ratio*max_opt_val
 
     # min_lengths[i][j] represents the min length of the edge between agents[i] and tasks[j]
