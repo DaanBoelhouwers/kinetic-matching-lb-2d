@@ -59,17 +59,9 @@ def compute_flip_path(n_points, agents, tasks, approx_ratio, verbose=False):
                     # Can transition using flip, add edge
                     n_flip_edges += 1
 
-                    if len(intervals[i]) > 1 or len(intervals[j]) > 1:
-                        # A matching falls below treshold for multiple intervals,
-                        # could technically be possible, but doesn't occur for instances tried so far
-                        print("Warning: Matching with more than 1 interval detected!")
-                    if len(intervals[i]) < 1 or len(intervals[j]) < 1:
-                        # One of the matchings never has an approximation ratio <= r
-                        continue
-
                     # Check if the time intervals of the matchings intersect
-                    i_s, i_e = intervals[i][0]
-                    j_s, j_e = intervals[j][0]
+                    i_s, i_e = intervals[i]
+                    j_s, j_e = intervals[j]
                     if not (i_e < j_s or j_e < i_s):
                         # They intersect, add edge
                         neighbours[i].append(j)
@@ -100,8 +92,8 @@ def compute_flip_path(n_points, agents, tasks, approx_ratio, verbose=False):
 
             for m in neighbours[earliest_m]:
                 if not visited[m]:
-                    em_s, em_e = intervals[earliest_m][0]
-                    m_s, m_e = intervals[m][0]
+                    em_s, em_e = intervals[earliest_m]
+                    m_s, m_e = intervals[m]
                     min_shared_t = max(em_s, m_s)
                     # Check if we dont arrive after interval
                     if min_t[earliest_m] > m_e:
@@ -128,24 +120,31 @@ def compute_flip_path(n_points, agents, tasks, approx_ratio, verbose=False):
     t0 = time.time()
     if verbose: print("Calculating intervals...")
     intervals = [m.get_intervals(approx_ratio) for m in matchings]
+    flip_graph_vertices = []
+    for i in range(len(intervals)):
+        # For each interval of a matching add a copy
+        for _ in intervals[i]:
+            flip_graph_vertices.append(matchings[i])
+    # Flatten intervals
+    intervals = [i for m_intervals in intervals for i in m_intervals]
     time_spent["calculating intervals"] = time.time() - t0
     if verbose: print(f"Finished in {time.time() - t0}s")
 
     t0 = time.time()
     if verbose: print("Computing edges...")
-    neighbours, n_edges, n_flip_edges = compute_edges(matchings, intervals)
+    neighbours, n_edges, n_flip_edges = compute_edges(flip_graph_vertices, intervals)
     time_spent["computing edges"] = time.time() - t0
     if verbose: print(f"Finished in {time.time() - t0}s")
 
     t0 = time.time()
     if verbose: print("Identifying source and goal...")
-    for i in range(len(matchings)):
-        if matchings[i].assignment == sorted(matchings[i].assignment):
+    for i in range(len(flip_graph_vertices)):
+        if flip_graph_vertices[i].assignment == sorted(flip_graph_vertices[i].assignment):
             source = i
             break
-    for i in range(len(matchings)):
-        sorted_m = sorted(matchings[i].assignment)
-        if matchings[i].assignment == sorted_m[-1:] + sorted_m[:-1]:
+    for i in range(len(flip_graph_vertices)):
+        sorted_m = sorted(flip_graph_vertices[i].assignment)
+        if flip_graph_vertices[i].assignment == sorted_m[-1:] + sorted_m[:-1]:
             goal = i
             break
     time_spent["finding source and goal"] = time.time() - t0
@@ -153,7 +152,7 @@ def compute_flip_path(n_points, agents, tasks, approx_ratio, verbose=False):
 
     t0 = time.time()
     if verbose: print(f"Running Dijkstra's...")
-    min_t, prev = dijkstra(matchings, intervals, neighbours, source, goal)
+    min_t, prev = dijkstra(flip_graph_vertices, intervals, neighbours, source, goal)
     time_spent["dijkstra's"] = time.time() - t0
     if verbose: print(f"Finished in {time.time() - t0}s")
 
