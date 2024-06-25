@@ -30,8 +30,8 @@ class Edge:
         v = self.v.location(t)
         return LA.norm(u-v, 2)
 
-    def min_length(self):
-        """Compute the minimum length an edge will have for t in [0,1]"""
+    def min_length(self, t_start, t_end):
+        """Compute the minimum length an edge will have for t in [t_start,t_end]"""
         u_start = self.u.p_start
         u_end = self.u.p_end
         v_start = self.v.p_start
@@ -39,10 +39,10 @@ class Edge:
         b = u_start - v_start
         a = u_end - u_start - (v_end - v_start)
         min_t = -np.dot(a,b) / LA.norm(a, 2)**2
-        if 0 <= min_t and min_t <= 1:
+        if t_start <= min_t and min_t <= t_end:
             return self.length(min_t)
         else:
-            return min(self.length(0), self.length(1))
+            return min(self.length(t_start), self.length(t_end))
 
 class Matching:
     """"Represents a matching"""
