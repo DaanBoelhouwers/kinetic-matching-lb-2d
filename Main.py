@@ -17,14 +17,14 @@ def compute_flip_path(n_points, agents, tasks, approx_ratio, verbose=False):
     for i in range(len(agents)):
         min_lengths_agent = []
         for j in range(len(tasks)):
-            min_lengths_agent.append(Edge(agents[i], tasks[j]).min_length())
+            min_lengths_agent.append(Edge(agents[i], tasks[j]).min_length(0,1))
         min_lengths.append(min_lengths_agent)
 
     # Compute matchings (nodes of the flip graph)
     def generate_matchings(agents, tasks, i, selected_tasks, w, w_max, matchings):
         """Recursively generates matchings, already filters out matchings whose cost is too large"""
         if w > w_max:
-            # sum of min lenghts already results in approximation factor worse than goal
+            # sum of min lenghts already results in approximation factor worse than goal, don't include
             return 
         if i == len(agents):
             matchings.append(Matching(agents, tasks, selected_tasks))
@@ -77,7 +77,7 @@ def compute_flip_path(n_points, agents, tasks, approx_ratio, verbose=False):
     
         return neighbours, n_edges, n_flip_edges
 
-    # Search for a path through the flip graph from source to goal along which t is increasing.
+    # Search for a path through the flip graph from source to goal along which t is non-decreasing.
     def dijkstra(matchings, intervals, neighbours, source, goal):
         min_t = [np.inf]*len(matchings)
         min_t[source] = 0
