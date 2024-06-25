@@ -13,6 +13,7 @@ def compute_flip_path(n_points, agents, tasks, approx_ratio, verbose=False):
     B = approx_ratio*max_opt_val
 
     # min_lengths[i][j] represents the min length of the edge between agents[i] and tasks[j]
+    # only used to filter out "bad" matchings in generate_matchings
     min_lengths = []
     for i in range(len(agents)):
         min_lengths_agent = []
@@ -37,8 +38,8 @@ def compute_flip_path(n_points, agents, tasks, approx_ratio, verbose=False):
     # Compute edges of the flip graph
     def compute_edges(matchings, intervals):
         # Variables used for tracking number of edges to measure effectiveness of filtering
-        n_flip_edges = 0    # Number of candidate edges in flip graph
-        n_edges = 0         # Number of (actual) edges in generated graph for which time intervals overlap
+        n_flip_edges = 0    # Number of candidate edges in flip graph (intervals might not overlap)
+        n_edges = 0         # Number of actual edges in generated graph (intervals do overlap)
 
         # Adjacency dictionary for flip graph
         neighbours = dict()
@@ -63,7 +64,7 @@ def compute_flip_path(n_points, agents, tasks, approx_ratio, verbose=False):
                         # could technically be possible, but doesn't occur for instances tried so far
                         print("Warning: Matching with more than 1 interval detected!")
                     if len(intervals[i]) < 1 or len(intervals[j]) < 1:
-                        # N
+                        # One of the matchings never has an approximation ratio <= r
                         continue
 
                     # Check if the time intervals of the matchings intersect

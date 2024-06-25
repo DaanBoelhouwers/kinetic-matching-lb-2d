@@ -67,7 +67,7 @@ class Matching:
         edges_opt= []
         for i in range(len(self.agents)):
             edges_opt.append(Edge(self.agents[i], self.tasks[i]))
-        # Maximum value of opt
+        # Maximum value of opt (occurs at t=0.5)
         opt_max = sum([edge.length(0.5) for edge in edges_opt])
 
         # Note that at t = 0 and t = 1 all matchings (except for the optimal matchings) have an approx ratio worse than max_approx_ratio
@@ -79,13 +79,19 @@ class Matching:
         step = 0
         while step <= steps:
             t = step/steps
-            cost = sum([edge.length(t) for edge in edges])
-            # Due to cost of opt changing linearly, we can compute it by interpolating between min and max values.
-            cost_opt = min(2*t*opt_max, 2*(1-t)*opt_max)
-            if cost_opt < 0.0001:
-                approx_ratio = np.inf
+            # Compute a lowerbound on the cost of the matching
+            min_cost = sum([edge.min_length(t, t+1/steps) for edge in edges])
+            # Compute an upperbound on the cost of optimal matching
+            if t+1/steps <= 0.5:
+                max_opt = 2*(t+1/steps)*opt_max
+            elif t >= 0.5:
+                max_opt = 2*(1-t)*opt_max
             else:
-                approx_ratio = cost / cost_opt
+                max_opt = opt_max
+            
+            # Compute minimum achievable approximation ratio of matching in this time step
+            # Due to rough bounds, this can be smaller than 1
+            approx_ratio = min_cost / max_opt
             
             if approx_ratio <= max_approx_ratio and not below_ratio:
                 # Dropped below the ratio, start of new interval
@@ -95,17 +101,6 @@ class Matching:
                 # Increased above the ratio, end of interval
                 intervals.append((interval_start, t))
                 below_ratio = False
-
-            # Attempt at speeding up by increasing step size, has little effect on run time in practice
-            step_size = 1
-            if approx_ratio == np.inf:
-                pass
-            elif below_ratio:
-                while 2*step_size < (max_approx_ratio - approx_ratio) / (4 * opt_max):
-                    step_size *= 2
-            else: # above ratio
-                while 2*step_size < (approx_ratio - max_approx_ratio) / (4 * opt_max):
-                    step_size *= 2
-            step += step_size
+            step += 1
 
         return intervals
