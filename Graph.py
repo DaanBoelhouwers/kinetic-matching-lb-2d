@@ -55,7 +55,7 @@ class Matching:
     def get_intervals(self, max_approx_ratio):
         """
         Computes time intervals at which the matching has an approximation ratio <= max_approx_ratio
-        by computing approximation at fixed time steps.
+        by computing a lower bound on the approximation ratio for fixed time intervals.
         """
 
         # Construct list of edges of this matching
@@ -70,8 +70,7 @@ class Matching:
         # Maximum value of opt (occurs at t=0.5)
         opt_max = sum([edge.length(0.5) for edge in edges_opt])
 
-        # Note that at t = 0 and t = 1 all matchings (except for the optimal matchings) have an approx ratio worse than max_approx_ratio
-        # Therefore, below_ratio starts at False
+        # Compute intervals for which cost of matching is below max_approx_ratio
         steps = 100
         below_ratio = False
         interval_start = 0
@@ -95,15 +94,15 @@ class Matching:
             
             if approx_ratio <= max_approx_ratio and not below_ratio:
                 # Dropped below the ratio, start of new interval
-                interval_start = t - 1/steps
+                interval_start = max(0, t - 1/steps)
                 below_ratio = True
             if approx_ratio > max_approx_ratio and below_ratio:
                 # Increased above the ratio, end of interval
-                intervals.append((interval_start, t))
+                intervals.append((interval_start, min(1, t + 2/steps)))
                 below_ratio = False
             step += 1
  
         if below_ratio:
-            intervals.append((interval_start, t))
+            intervals.append((interval_start, 1))
 
         return intervals
