@@ -24,7 +24,7 @@ def compute_flip_path(n_points, agents, tasks, approx_ratio, verbose=False):
     # Compute matchings (nodes of the flip graph)
     def generate_matchings(agents, tasks, i, selected_tasks, w, w_max, matchings):
         """Recursively generates matchings, already filters out matchings whose cost is too large"""
-        if w > w_max:
+        if w > w_max + 0.001:
             # sum of min lenghts already results in approximation factor worse than goal, don't include
             return 
         if i == len(agents):
