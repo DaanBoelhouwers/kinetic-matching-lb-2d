@@ -178,6 +178,7 @@ def compute_flip_path(n_points, agents, tasks, approx_ratio, verbose=False):
     return t_done, flip_path, time_spent
 
 def find_approx_ratio(n_points, approx_ratio_ub, draw=False, verbose=False, acc=0.0001):
+    # Generate points
     phi = 0
     points = []
     for _ in range(n_points):
@@ -190,6 +191,7 @@ def find_approx_ratio(n_points, approx_ratio_ub, draw=False, verbose=False, acc=
         agents.append(Vertex(points[i], points[i], VertexType.AGENT))
         tasks.append(Vertex(points[i], points[(i+1)%len(points)], VertexType.TASK))
 
+    # Perform binary search to find approx ratio
     ub = approx_ratio_ub
     lb = 1
     search_iterations = 0
