@@ -1,5 +1,6 @@
 from Main import find_approx_ratio
 from math import pi, ceil
+from datetime import datetime
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -10,7 +11,7 @@ times_n = []
 for i in range(2, n_max+1):
     r, ts = find_approx_ratio(i, 1 + 2/pi, draw=i==n_max)
     ratios.append(r)
-    print(f"Computed ratio for n={i} - r={r}")
+    print(f"[{datetime.now().strftime("%H:%M:%S")}] Computed ratio for n={i} - r={r}")
     times_n.append(ts["total"])
     if not time_spent:
         time_spent = ts
