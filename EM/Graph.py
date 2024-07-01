@@ -42,10 +42,12 @@ class Edge:
 class Matching:
     """"Represents a matching"""
 
-    def __init__(self, agents, tasks, assignment):
+    def __init__(self, agents, tasks, matching):
         self.agents = agents
         self.tasks = tasks
-        self.assignment = assignment
+        self.points = agents + tasks
+        # list of len(points), where matching[i] = j <-> matching[j] = i, implying that point i is matched to j
+        self.matching = matching
 
     def get_intervals(self, max_approx_ratio):
         """
@@ -55,8 +57,14 @@ class Matching:
 
         # Construct list of edges of this matching
         edges = []
-        for i in range(len(self.assignment)):
-            edges.append(Edge(self.agents[i], self.tasks[self.assignment[i]]))
+        incident_edge_included = []
+        for i in range(len(self.points)):
+            incident_edge_included.append(False)
+        for i in range(len(self.matching)):
+            if not incident_edge_included[i]:
+                edges.append(Edge(self.points[i], self.points[self.matching[i]]))
+                incident_edge_included[i] = True
+                incident_edge_included[self.matching[i]] = True
 
         # Construct list of edges of optimal matching (for t in [0, 0.5])
         edges_opt= []

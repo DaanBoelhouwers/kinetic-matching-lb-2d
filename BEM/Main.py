@@ -162,10 +162,10 @@ def compute_flip_path(n_points, agents, tasks, approx_ratio, verbose=False):
     flip_path = []
     if t_done <= 1:
         i = goal
-        flip_path.insert(0, (t_done, matchings[goal]))
+        flip_path.insert(0, (t_done, flip_graph_vertices[goal]))
         while prev[i] != i:
             i = prev[i]
-            flip_path.insert(0, (min_t[i], matchings[i])) 
+            flip_path.insert(0, (min_t[i], flip_graph_vertices[i])) 
 
 
     if verbose: 
@@ -234,7 +234,7 @@ def find_approx_ratio(n_points, approx_ratio_ub, draw=False, verbose=False, acc=
                 img1.line([tuple(u), tuple(v)], fill ="white", width = 3)
                 img1.ellipse([tuple(u - point_size), tuple(u + point_size)], fill="blue", width=2)
                 img1.ellipse([tuple(v - point_size), tuple(v + point_size)], fill="red", width=3) 
-            img.save(f"images/matching_{i}_t{t}.png")
+            img.save(f"BEM/images/matching_{i}_t{t}.png")
             i += 1
     
     return lb, time_spent

@@ -4,7 +4,7 @@ from datetime import datetime
 import numpy as np
 import matplotlib.pyplot as plt
 
-n_max = 11
+n_max = 5
 ratios = []
 time_spent = None
 times_n = []

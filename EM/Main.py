@@ -2,6 +2,7 @@ from Graph import Vertex, Edge, Matching
 from math import cos, sin, pi
 import numpy as np
 import time
+import copy
 
 
 def compute_flip_path(n_points, agents, tasks, approx_ratio, verbose=False):
@@ -12,27 +13,39 @@ def compute_flip_path(n_points, agents, tasks, approx_ratio, verbose=False):
         max_opt_val += Edge(agents[i], tasks[i]).length(0.5)
     B = approx_ratio*max_opt_val
 
-    # min_lengths[i][j] represents the min length of the edge between agents[i] and tasks[j]
+    # Merge agents and tasks, since we don't distinguish
+    points = agents + tasks
+    # min_lengths[i][j] represents the min length of the edge between points[i] and points[j]
     # only used to filter out "bad" matchings in generate_matchings
     min_lengths = []
-    for i in range(len(agents)):
-        min_lengths_agent = []
-        for j in range(len(tasks)):
-            min_lengths_agent.append(Edge(agents[i], tasks[j]).min_length(0,1))
-        min_lengths.append(min_lengths_agent)
+    for i in range(len(points)):
+        min_lengths_i = []
+        for j in range(len(points)):
+            if i == j:
+                min_lengths_i.append(0)
+            else:
+                min_lengths_i.append(Edge(points[i], points[j]).min_length(0,1))
+        min_lengths.append(min_lengths_i)
 
     # Compute matchings (nodes of the flip graph)
-    def generate_matchings(agents, tasks, i, selected_tasks, w, w_max, matchings):
+    def generate_matchings(agents, tasks, i, matching, w, w_max, matchings, count_matched):
         """Recursively generates matchings, already filters out matchings whose cost is too large"""
         if w > w_max + 0.001:
             # sum of min lenghts already results in approximation factor worse than goal, don't include
             return 
-        if i == len(agents):
-            matchings.append(Matching(agents, tasks, selected_tasks))
+        if count_matched == len(matching):
+            matchings.append(Matching(agents, tasks, matching))
             return
-        for j in range(len(tasks)):
-            if j not in selected_tasks:
-                generate_matchings(agents, tasks, i+1, selected_tasks + [j], w + min_lengths[i][j], w_max, matchings)
+        if not matching[i] == -1:
+            # current vertex is already matched
+            generate_matchings(agents, tasks, i+1, matching, w, w_max, matchings, count_matched)
+        else:
+            for j in range(i+1, len(matching)):
+                if matching[i] == -1 and matching[j] == -1:
+                    new_matching = copy.deepcopy(matching)
+                    new_matching[i] = j
+                    new_matching[j] = i
+                    generate_matchings(agents, tasks, i+1, new_matching, w + min_lengths[i][j], w_max, matchings, count_matched+2)
         return
 
     # Compute edges of the flip graph
@@ -51,11 +64,13 @@ def compute_flip_path(n_points, agents, tasks, approx_ratio, verbose=False):
                 # Check if it is possible to transition using a flip
                 n_changes = 0
                 k = 0
-                while n_changes <= 2 and k < n_points:
-                    if matchings[i].assignment[k] != matchings[j].assignment[k]:
+                while n_changes <= 4 and k < 2*n_points:
+                    if matchings[i].matching[k] != matchings[j].matching[k]:
                         n_changes += 1
                     k += 1
-                if n_changes == 2:
+                if n_changes > 0 and n_changes < 4:
+                    print("Wtf?")
+                if n_changes == 4:
                     # Can transition using flip, add edge
                     n_flip_edges += 1
 
@@ -112,8 +127,14 @@ def compute_flip_path(n_points, agents, tasks, approx_ratio, verbose=False):
 
     t0 = t_start
     if verbose: print("Generating matchings...")
+    # Initialize an empty matching, 
+    # if matching[i] = j then also matching[j] = i and i is matched to j
+    # if matching[i] = -1 then i is unmatched
+    matching = []
+    for i in range(len(agents) + len(tasks)):
+        matching.append(-1)
     matchings = []
-    generate_matchings(agents, tasks, 0, [], 0, B, matchings)
+    generate_matchings(agents, tasks, 0, matching, 0, B, matchings, 0)
     time_spent["generating matchings"] = time.time() - t0
     if verbose: print(f"Finished in {time.time() - t0}s")
 
@@ -138,13 +159,14 @@ def compute_flip_path(n_points, agents, tasks, approx_ratio, verbose=False):
 
     t0 = time.time()
     if verbose: print("Identifying source and goal...")
+    opt_matching_t0 = [x + n_points for x in range(n_points)] + list(range(n_points))
     for i in range(len(flip_graph_vertices)):
-        if flip_graph_vertices[i].assignment == sorted(flip_graph_vertices[i].assignment):
+        if flip_graph_vertices[i].matching == opt_matching_t0:
             source = i
             break
+    opt_matching_t1 = [x + n_points for x in range(n_points)][-1:] + [x + n_points for x in range(n_points)][:-1] + list(range(1, n_points)) + [0]
     for i in range(len(flip_graph_vertices)):
-        sorted_m = sorted(flip_graph_vertices[i].assignment)
-        if flip_graph_vertices[i].assignment == sorted_m[-1:] + sorted_m[:-1]:
+        if flip_graph_vertices[i].matching == opt_matching_t1:
             goal = i
             break
     time_spent["finding source and goal"] = time.time() - t0
@@ -162,10 +184,10 @@ def compute_flip_path(n_points, agents, tasks, approx_ratio, verbose=False):
     flip_path = []
     if t_done <= 1:
         i = goal
-        flip_path.insert(0, (t_done, matchings[goal]))
+        flip_path.insert(0, (t_done, flip_graph_vertices[goal]))
         while prev[i] != i:
             i = prev[i]
-            flip_path.insert(0, (min_t[i], matchings[i])) 
+            flip_path.insert(0, (min_t[i], flip_graph_vertices[i])) 
 
 
     if verbose: 
@@ -185,6 +207,8 @@ def find_approx_ratio(n_points, approx_ratio_ub, draw=False, verbose=False, acc=
         points.append((cos(phi), sin(phi)))
         phi += 2*pi/n_points
 
+    # For EM agents can be matched to agents (and tasks to tasks)
+    # We still make to seperate lists to distinguish between stationary and moving points
     agents = []
     tasks = []
     for i in range(len(points)):
@@ -225,16 +249,27 @@ def find_approx_ratio(n_points, approx_ratio_ub, draw=False, verbose=False, acc=
         scaling_vector = np.array([128, 128])
         point_size = np.array([3,3])
         i = 0
+        points = agents+tasks
         for t, m in flip_path:
+
+            if t==0:
+                print(m.matching)
+
             img = Image.new("RGB", (w, h))
             img1 = ImageDraw.Draw(img)
-            for j in range(len(m.assignment)):
-                u = scaling_vector + scaling_vector*m.agents[j].location(t)
-                v = scaling_vector + scaling_vector*m.tasks[m.assignment[j]].location(t)
-                img1.line([tuple(u), tuple(v)], fill ="white", width = 3)
-                img1.ellipse([tuple(u - point_size), tuple(u + point_size)], fill="blue", width=2)
-                img1.ellipse([tuple(v - point_size), tuple(v + point_size)], fill="red", width=3) 
-            img.save(f"images/matching_{i}_t{t}.png")
+            incident_edge_drawn =[]
+            for j in range(len(m.matching)):
+                incident_edge_drawn.append(False)
+            for j in range(len(m.matching)):
+                if not incident_edge_drawn[j]:
+                    u = scaling_vector + scaling_vector*points[j].location(t)
+                    v = scaling_vector + scaling_vector*points[m.matching[j]].location(t)
+                    img1.line([tuple(u), tuple(v)], fill ="white", width = 3)
+                    img1.ellipse([tuple(u - point_size), tuple(u + point_size)], fill="red", width=2)
+                    img1.ellipse([tuple(v - point_size), tuple(v + point_size)], fill="red", width=3)
+                    incident_edge_drawn[j] = True
+                    incident_edge_drawn[m.matching[j]] = True
+            img.save(f"EM/images/matching_{i}_t{t}.png")
             i += 1
     
     return lb, time_spent
