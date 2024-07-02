@@ -7,7 +7,7 @@ The function `find_approx_ratio` (main.py, line 180) performs the binary search 
 - Next, it computes the edges of the flip graph (BEM/main.py, line 135), which corresponds to lines 11-16 of the pseudocode.
 - Finally, the algorithm checks whether there exists a path from $M_1$ to $M_2$ using Dijkstra's (BEM/main.py, line 141-156), which corresponds to lines 17-18 of the pseudocode.
 
-The table below shows the lowerbounds computed by the algorithm for $n = 2, 3, \dots, 11$ truncated to four decimal places.
+The table below shows the lowerbounds computed by the algorithm for $n = 2, 3, \dots, 11$ truncated to four decimal places. Note that for both BEM and EM the number of points for a given $n$ is $2n$.
 
 | $n$ | lowerbound (BEM) | lowerbound (EM) |
 |-----|------------|------------|
