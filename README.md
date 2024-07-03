@@ -1,5 +1,5 @@
 ## Computing a lowerbound on the topological stability ratio of balanced BEM and EM where $n$ is even in 2 dimensions
-This repository contains the code used to compute a lowerbound on the topological stability ratio of kinetic BEM and kinetic EM in two dimensions. We give a brief explanation of how the code for BEM corresponds to the pseudocode found in the thesis. The code for EM contains the same functions but has be slightly altered to work for EM instead of BEM.
+This repository contains the code used to compute a lowerbound on the topological stability ratio of kinetic BEM and kinetic EM in two dimensions. We give a brief explanation of how the code for BEM corresponds to the pseudocode found in the thesis. The code for EM contains the same functions but has been slightly altered to work for EM instead of BEM.
 
 The function `find_approx_ratio` (main.py, line 180) performs the binary search on the approximation ratio. In each search iteration it calls the function `compute_flip_path` which corresponds to the algorithm given in pseudocode. The function `compute_flip_path` does the following:
 - It first generates all matchings (BEM/main.py, line 116), here we already filter out matchings which we know will never have an approximation ratio smaller than or equal to `approx_ratio` ($r$). This corresponds to line 1 of the pseudocode.
